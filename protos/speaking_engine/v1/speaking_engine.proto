@@ -1,0 +1,203 @@
+// =============================== WARNING ===============================
+// This file defines the internal gRPC API between the Rust Orchestrator
+// and the C++ Speaking Engine.
+// Follow all Protobuf best practices outlined in shared.proto.
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.speaking_engine.v1;
+
+import "protos/shared/v1/shared.proto";
+
+// Unary definitions
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool alive = 1;
+}
+
+// Control definitions
+
+message LoadDeviceRequest {
+  saasy.shared.v1.RtpCapabilitiesFinalized router_rtp_capabilities = 1;
+}
+
+message LoadDeviceResponse {
+  // Empty response
+}
+
+message GetDeviceRtpCapabilitiesRequest {
+  // Empty request
+}
+
+message GetDeviceRtpCapabilitiesResponse {
+  saasy.shared.v1.RtpCapabilities device_rtp_capabilities = 1;
+}
+
+message CreateTransportRequest {
+  saasy.shared.v1.TransportId transport_id = 1;
+  saasy.shared.v1.IceParameters ice_parameters = 2;
+  repeated saasy.shared.v1.IceCandidate ice_candidates = 3;
+  saasy.shared.v1.DtlsParameters dtls_parameters = 4;
+}
+
+message CreateTransportResponse {
+  // Empty response
+}
+
+message StartProductionRequest {
+  string transport_id = 1;
+}
+
+message StartProductionResponse {
+  string device_producer_id = 1;
+}
+
+message CloseSessionRequest {
+  // Empty request
+}
+
+message CloseSessionResponse {
+  // Empty response
+}
+
+message GetRouterProducerIdRequest {
+  string transport_id = 1;
+  saasy.shared.v1.MediaKind kind = 2;
+  saasy.shared.v1.RtpParameters rtp_parameters = 3;
+}
+
+message GetRouterProducerIdResponse {
+  string producer_id = 1;
+}
+
+message FlushAudioRequest {
+  uint32 fade_duration_ms = 1;
+}
+
+message FlushAudioResponse {
+  // Empty response
+}
+
+message SpeechGenerationCompleteRequest {
+  // Empty request
+}
+
+message SpeechGenerationCompleteResponse {
+  // Empty response
+}
+
+// Event definitions
+
+message OnConnect {
+  string transport_id = 1;
+  saasy.shared.v1.DtlsParameters device_dtls_parameters = 2;
+}
+
+message OnPlaybackComplete {
+  // Empty event
+}
+
+// Media definitions
+
+message MediaFrame {
+  string device_producer_id = 1;
+  saasy.shared.v1.MediaKind kind = 2;
+  bytes frame_data = 3;
+}
+
+// Control Stream Envelope
+
+enum DirectionEnum {
+  DIRECTION_ENUM_REQUEST = 0;
+  DIRECTION_ENUM_RESPONSE = 1;
+}
+
+message SpeakingEngineControlMessage {
+  DirectionEnum direction = 1;
+  string type = 2;
+  string request_id = 3;
+  string session_id = 4;
+  string participant_id = 5;
+  
+  oneof data {
+    // Orchestrator -> Engine (Requests)
+    LoadDeviceRequest load_device_request = 6;
+    GetDeviceRtpCapabilitiesRequest get_device_rtp_capabilities_request = 7;
+    CreateTransportRequest create_transport_request = 8;
+    StartProductionRequest start_production_request = 9;
+    CloseSessionRequest close_session_request = 10;
+    FlushAudioRequest flush_audio_request = 11;
+    SpeechGenerationCompleteRequest speech_generation_complete_request = 12;
+    // Engine -> Orchestrator (Requests)
+    GetRouterProducerIdRequest get_router_producer_id_request = 13;
+    
+    // Engine -> Orchestrator (Responses)
+    LoadDeviceResponse load_device_response = 14;
+    GetDeviceRtpCapabilitiesResponse get_device_rtp_capabilities_response = 15;
+    CreateTransportResponse create_transport_response = 16;
+    StartProductionResponse start_production_response = 17;
+    CloseSessionResponse close_session_response = 18;
+    FlushAudioResponse flush_audio_response = 19;
+    SpeechGenerationCompleteResponse speech_generation_complete_response = 20;
+    // Orchestrator -> Engine (Responses)
+    GetRouterProducerIdResponse get_router_producer_id_response = 21;
+
+    // Orchestrator <-> Engine (Responses)
+    saasy.shared.v1.ErrorResponse error_response = 22;
+  }
+}
+
+// Event Stream Envelopes
+
+message EngineToOrchestratorEvent {
+  string type = 1;
+  string session_id = 2;
+  string participant_id = 3;
+  oneof data {
+    OnConnect on_connect = 4;
+    OnPlaybackComplete on_playback_complete = 5;
+  }
+}
+
+message OrchestratorToEngineEvent {
+  string type = 1;
+  string session_id = 2;
+  string participant_id = 3;
+  // oneof data reserved for future use
+}
+
+// Media Stream Envelopes
+
+message SpeakingEngineMediaPayload {
+  string type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string participant_id = 4;
+  oneof data {
+    // Orchestrator -> Engine
+    MediaFrame media_frame = 5;
+  }
+}
+
+message SpeakingEngineMediaAck {
+  string type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string participant_id = 4;
+  oneof data {
+    // When oneof is not set, this is a simple acknowledgment
+    saasy.shared.v1.ErrorResponse error_response = 5;
+  }
+}
+
+// Service definition
+
+service SpeakingEngineService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc Control(stream SpeakingEngineControlMessage) returns (stream SpeakingEngineControlMessage);
+  rpc Events(stream OrchestratorToEngineEvent) returns (stream EngineToOrchestratorEvent);
+  rpc Media(stream SpeakingEngineMediaPayload) returns (stream SpeakingEngineMediaAck);
+}

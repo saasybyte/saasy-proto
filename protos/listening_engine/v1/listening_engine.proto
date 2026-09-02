@@ -1,0 +1,196 @@
+// =============================== WARNING ===============================
+// This file defines the internal gRPC API between the Rust Orchestrator
+// and the C++ Listening Engine.
+// Follow all Protobuf best practices outlined in shared.proto.
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.listening_engine.v1;
+
+import "protos/shared/v1/shared.proto";
+
+// Unary definitions
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool alive = 1;
+}
+
+// Control definitions
+
+message LoadDeviceRequest {
+  saasy.shared.v1.RtpCapabilitiesFinalized router_rtp_capabilities = 1;
+}
+
+message LoadDeviceResponse {
+  // Empty response
+}
+
+message GetDeviceRtpCapabilitiesRequest {
+  // Empty request
+}
+
+message GetDeviceRtpCapabilitiesResponse {
+  saasy.shared.v1.RtpCapabilities device_rtp_capabilities = 1;
+}
+
+message CreateTransportRequest {
+  saasy.shared.v1.TransportId transport_id = 1;
+  saasy.shared.v1.IceParameters ice_parameters = 2;
+  repeated saasy.shared.v1.IceCandidate ice_candidates = 3;
+  saasy.shared.v1.DtlsParameters dtls_parameters = 4;
+}
+
+message CreateTransportResponse {
+  // Empty response
+}
+
+message CreateConsumerRequest {
+  saasy.shared.v1.ConsumerId consumer_id = 1;
+  saasy.shared.v1.ProducerId producer_id = 2;
+  saasy.shared.v1.MediaKind kind = 3;
+  saasy.shared.v1.RtpParameters rtp_parameters = 4;
+}
+
+message CreateConsumerResponse {
+  string device_consumer_id = 1;
+}
+
+message ResumeConsumerRequest {
+  string device_consumer_id = 1;
+}
+
+message ResumeConsumerResponse {
+  // Empty response
+}
+
+message CloseSessionRequest {
+  // Empty request
+}
+
+message CloseSessionResponse {
+  // Empty response
+}
+
+// Event definitions
+
+message OnConnect {
+  string transport_id = 1;
+  saasy.shared.v1.DtlsParameters device_dtls_parameters = 2;
+}
+
+message OnSpeechStarted {
+  uint64 timestamp_ms = 1;
+}
+
+message OnSpeechEnded {
+  uint64 timestamp_ms = 1;
+}
+
+message OnUserTurnComplete {
+  float confidence = 1;
+  uint64 timestamp_ms = 2;
+}
+
+// Media definitions
+
+message MediaFrame {
+  string device_consumer_id = 1;
+  saasy.shared.v1.MediaKind kind = 2;
+  bytes frame_data = 3;
+  uint32 sample_rate = 4;
+  uint32 channels = 5;
+  uint64 timestamp_ms = 6;
+}
+
+// Control Stream Envelope
+
+enum DirectionEnum {
+  DIRECTION_ENUM_REQUEST = 0;
+  DIRECTION_ENUM_RESPONSE = 1;
+}
+
+message ListeningEngineControlMessage {
+  DirectionEnum direction = 1;
+  string type = 2;
+  string request_id = 3;
+  string session_id = 4;
+  string participant_id = 5;
+  
+  oneof data {
+    // Orchestrator -> Engine (Requests)
+    LoadDeviceRequest load_device_request = 6;
+    GetDeviceRtpCapabilitiesRequest get_device_rtp_capabilities_request = 7;
+    CreateTransportRequest create_transport_request = 8;
+    CreateConsumerRequest create_consumer_request = 9;
+    ResumeConsumerRequest resume_consumer_request = 10;
+    CloseSessionRequest close_session_request = 11;
+    
+    // Engine -> Orchestrator (Responses)
+    LoadDeviceResponse load_device_response = 12;
+    GetDeviceRtpCapabilitiesResponse get_device_rtp_capabilities_response = 13;
+    CreateTransportResponse create_transport_response = 14;
+    CreateConsumerResponse create_consumer_response = 15;
+    ResumeConsumerResponse resume_consumer_response = 16;
+    CloseSessionResponse close_session_response = 17;
+
+    // Orchestrator <-> Engine (Responses)
+    saasy.shared.v1.ErrorResponse error_response = 18;
+  }
+}
+
+// Event Stream Envelopes
+
+message EngineToOrchestratorEvent {
+  string type = 1;
+  string session_id = 2;
+  string participant_id = 3;
+  oneof data {
+    OnConnect on_connect = 4;
+    OnSpeechStarted on_speech_started = 5;
+    OnSpeechEnded on_speech_ended = 6;
+    OnUserTurnComplete on_user_turn_complete = 7;
+  }
+}
+
+message OrchestratorToEngineEvent {
+  string type = 1;
+  string session_id = 2;
+  string participant_id = 3;
+  // oneof data reserved for future use
+}
+
+// Media Stream Envelopes
+
+message ListeningEngineMediaPayload {
+  string type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string participant_id = 4;
+  oneof data {
+    // Engine -> Orchestrator
+    MediaFrame media_frame = 5;
+  }
+}
+
+message ListeningEngineMediaAck {
+  string type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string participant_id = 4;
+  oneof data {
+    // When oneof is not set, this is a simple acknowledgment
+    saasy.shared.v1.ErrorResponse error_response = 5;
+  }
+}
+
+// Service definition
+
+service ListeningEngineService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc Control(stream ListeningEngineControlMessage) returns (stream ListeningEngineControlMessage);
+  rpc Events(stream OrchestratorToEngineEvent) returns (stream EngineToOrchestratorEvent);
+  rpc Media(stream ListeningEngineMediaAck) returns (stream ListeningEngineMediaPayload);
+}

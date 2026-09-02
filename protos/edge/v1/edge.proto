@@ -1,0 +1,49 @@
+// =============================== WARNING ===============================
+// This file defines the internal grpc API for the Edge service.
+// Follow all Protobuf best practices outlined in shared.proto.
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.edge.v1;
+
+option go_package = "github.com/saasybyte/saasy-edge/pkg/pb/edge/v1;edgev1";
+
+// Message definitions
+
+message LLMProviderModel {
+  string id = 1;
+  string provider = 2;
+  string model_id = 3;
+  string display_name = 4;
+}
+
+message TTSProviderModel {
+  string id = 1;
+  string provider = 2;
+  string model_id = 3;
+  string display_name = 4;
+}
+
+message STTProviderModel {
+  string id = 1;
+  string provider = 2;
+  string model_id = 3;
+  string display_name = 4;
+}
+
+// Request/Response definitions
+
+message ListProviderModelsRequest {}
+
+message ListProviderModelsResponse {
+  repeated LLMProviderModel llm = 1;
+  repeated TTSProviderModel tts = 2;
+  repeated STTProviderModel stt = 3;
+}
+
+// Service definition
+
+service EdgeService {
+  rpc ListProviderModels(ListProviderModelsRequest) returns (ListProviderModelsResponse);
+}

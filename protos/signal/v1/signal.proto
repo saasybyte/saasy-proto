@@ -1,0 +1,82 @@
+// =============================== WARNING ===============================
+// This file defines the internal websocket API between the clients and
+// the Signal Service.
+// Follow all Protobuf best practices outlined in shared.proto.
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.signal.v1;
+
+import "protos/shared/v1/shared.proto";
+import "protos/sfu/v1/sfu.proto";
+
+// Request/Response definitions
+
+message RegisterSessionRequest {
+  string auth_token = 1;
+  string llm_provider = 2;
+  string llm_model_id = 3;
+  string tts_provider = 4;
+  string tts_model_id = 5;
+  string stt_provider = 6;
+  string stt_model_id = 7;
+}
+
+// Envelope definitions
+
+message SignalRequestEnvelope {
+  string type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string participant_id = 4;
+  oneof data {
+    RegisterSessionRequest register_session_request = 5;
+    saasy.shared.v1.JoinSessionRequest join_session_request = 6;
+    saasy.shared.v1.GetRouterRtpCapabilitiesRequest get_router_rtp_capabilities_request = 7;
+    saasy.shared.v1.SetRtpCapabilitiesRequest set_rtp_capabilities_request = 8;
+    saasy.shared.v1.CreateTransportRequest create_transport_request = 9;
+    saasy.shared.v1.ConnectTransportRequest connect_transport_request = 10;
+    saasy.shared.v1.CreateProducerRequest create_producer_request = 11;
+    saasy.shared.v1.CreateConsumerRequest create_consumer_request = 12;
+    saasy.shared.v1.ResumeConsumerRequest resume_consumer_request = 13;
+    saasy.shared.v1.CloseSessionRequest close_session_request = 14;
+    saasy.shared.v1.SubscribeToEventsRequest subscribe_to_events_request = 15;
+  }
+}
+
+message SignalResponseEnvelope {
+  string type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string participant_id = 4;
+  oneof data {
+    saasy.shared.v1.RegisterSessionResponse register_session_response = 5;
+    saasy.shared.v1.JoinSessionResponse join_session_response = 6;
+    saasy.shared.v1.GetRouterRtpCapabilitiesResponse get_router_rtp_capabilities_response = 7;
+    saasy.shared.v1.SetRtpCapabilitiesResponse set_rtp_capabilities_response = 8;
+    saasy.shared.v1.CreateTransportResponse create_transport_response = 9;
+    saasy.shared.v1.ConnectTransportResponse connect_transport_response = 10;
+    saasy.shared.v1.CreateProducerResponse create_producer_response = 11;
+    saasy.shared.v1.CreateConsumerResponse create_consumer_response = 12;
+    saasy.shared.v1.ResumeConsumerResponse resume_consumer_response = 13;
+    saasy.shared.v1.CloseSessionResponse close_session_response = 14;
+    saasy.shared.v1.ErrorResponse error_response = 15;
+  }
+}
+
+// Service definitions
+
+service SignalService {
+  rpc RegisterSession(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc JoinSession(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc GetRouterRtpCapabilities(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc SetRtpCapabilities(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc CreateTransport(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc ConnectTransport(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc CreateProducer(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc CreateConsumer(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc ResumeConsumer(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc CloseSession(SignalRequestEnvelope) returns (SignalResponseEnvelope);
+  rpc SubscribeToEvents(SignalRequestEnvelope) returns (stream saasy.sfu.v1.SfuEvent);
+}

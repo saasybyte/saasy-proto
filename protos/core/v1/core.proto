@@ -1,0 +1,26 @@
+// =============================== WARNING ===============================
+// This file defines the internal grpc API for the Core service.
+// Follow all Protobuf best practices outlined in shared.proto.
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.core.v1;
+
+// Request/Response definitions
+
+message RecordUsageRequest {
+  string invite_code_id = 1;
+  int32 seconds_consumed = 2;
+}
+
+message RecordUsageResponse {
+  int32 usage_remaining_seconds = 1;
+  bool budget_exhausted = 2;
+}
+
+// Service definition
+
+service CoreService {
+  rpc RecordUsage(RecordUsageRequest) returns (RecordUsageResponse);
+}

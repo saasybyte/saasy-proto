@@ -1,0 +1,166 @@
+// =============================== WARNING ===============================
+// This file defines the internal grpc API between the Signal Service and
+// the SFU Service.
+// Follow all Protobuf best practices outlined in shared.proto.
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.sfu.v1;
+
+import "protos/shared/v1/shared.proto";
+
+// Request/Response definitions
+
+message RegisterSessionRequest {
+  // No parameters needed - server will generate session ID
+}
+
+// Event definitions
+
+enum SessionEndReason {
+  SESSION_END_REASON_UNSPECIFIED = 0;
+  SESSION_END_REASON_NORMAL = 1;
+  SESSION_END_REASON_TIMEOUT = 2;
+  SESSION_END_REASON_ERROR = 3;
+}
+
+message SessionCreatedEvent {
+  string session_id = 1;
+  bool requires_ai = 2;
+  string llm_provider = 3;
+  string llm_model_id = 4;
+  string tts_provider = 5;
+  string tts_model_id = 6;
+  string stt_provider = 7;
+  string stt_model_id = 8;
+}
+
+message SessionEndedEvent {
+  string session_id = 1;
+  SessionEndReason reason = 2;
+}
+
+message SubscriptionConfirmedEvent {
+  string session_id = 1;
+}
+
+message TransportClosedEvent {
+  string transport_id = 1;
+}
+
+message IceStateChangeEvent {
+  string transport_id = 1;
+  string state = 2;
+}
+
+message DtlsStateChangeEvent {
+  string transport_id = 1;
+  string state = 2;
+}
+
+message NewProducerEvent {
+  string producer_id = 1;
+  int32  kind = 2;
+}
+
+message ProducerClosedEvent {
+  string producer_id = 1;
+}
+
+message ConsumerClosedEvent {
+  string consumer_id = 1;
+}
+
+message ProducerScoreEvent {
+  string producer_id = 1;
+  uint32 score = 2;
+}
+
+message ConsumerScoreEvent {
+  string consumer_id = 1;
+  uint32 score = 2;
+}
+
+message UsageStatusEvent {
+  int32 usage_remaining_seconds = 1;
+  bool budget_exhausted = 2;
+}
+
+message FarewellRequestedEvent {
+  string session_id = 1;
+}
+
+message SfuEvent {
+  oneof event {
+    SessionCreatedEvent sessionCreated = 1;        
+    SessionEndedEvent sessionEnded = 2;            
+    SubscriptionConfirmedEvent subscriptionConfirmed = 3;
+    TransportClosedEvent transportClosed = 4;
+    IceStateChangeEvent iceStateChange = 5;
+    DtlsStateChangeEvent dtlsStateChange = 6;
+    NewProducerEvent newProducer = 7;
+    ProducerClosedEvent producerClosed = 8;
+    ConsumerClosedEvent consumerClosed = 9;
+    ProducerScoreEvent producerScore = 10;
+    ConsumerScoreEvent consumerScore = 11;
+    UsageStatusEvent usageStatus = 12;
+    FarewellRequestedEvent farewellRequested = 13;
+  }
+}
+
+// Envelope definitions
+
+message SfuRequestEnvelope {
+  string type = 1;
+  string session_id = 2;
+  string participant_id = 3;
+  oneof data {
+    RegisterSessionRequest register_session_request = 4;
+    saasy.shared.v1.JoinSessionRequest join_session_request = 5;
+    saasy.shared.v1.GetRouterRtpCapabilitiesRequest get_router_rtp_capabilities_request = 6;
+    saasy.shared.v1.SetRtpCapabilitiesRequest set_rtp_capabilities_request = 7;
+    saasy.shared.v1.CreateTransportRequest create_transport_request = 8;
+    saasy.shared.v1.ConnectTransportRequest connect_transport_request = 9;
+    saasy.shared.v1.CreateProducerRequest create_producer_request = 10;
+    saasy.shared.v1.CreateConsumerRequest create_consumer_request = 11;
+    saasy.shared.v1.ResumeConsumerRequest resume_consumer_request = 12;
+    saasy.shared.v1.CloseSessionRequest close_session_request = 13;
+    saasy.shared.v1.SubscribeToEventsRequest subscribe_to_events_request = 14;
+  }
+}
+
+message SfuResponseEnvelope {
+  string type = 1;
+  string session_id = 2;
+  string participant_id = 3;
+  oneof data {
+    saasy.shared.v1.RegisterSessionResponse register_session_response = 4;
+    saasy.shared.v1.JoinSessionResponse join_session_response = 5;
+    saasy.shared.v1.GetRouterRtpCapabilitiesResponse get_router_rtp_capabilities_response = 6;
+    saasy.shared.v1.SetRtpCapabilitiesResponse set_rtp_capabilities_response = 7;
+    saasy.shared.v1.CreateTransportResponse create_transport_response = 8;
+    saasy.shared.v1.ConnectTransportResponse connect_transport_response = 9;
+    saasy.shared.v1.CreateProducerResponse create_producer_response = 10;
+    saasy.shared.v1.CreateConsumerResponse create_consumer_response = 11;
+    saasy.shared.v1.ResumeConsumerResponse resume_consumer_response = 12;
+    saasy.shared.v1.CloseSessionResponse close_session_response = 13;
+    saasy.shared.v1.ErrorResponse error_response = 14;
+  }
+}
+
+// Service definitions
+
+service SfuService {
+  rpc RegisterSession(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc JoinSession(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc GetRouterRtpCapabilities(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc SetRtpCapabilities(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc CreateTransport(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc ConnectTransport(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc CreateProducer(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc CreateConsumer(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc ResumeConsumer(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc CloseSession(SfuRequestEnvelope) returns (SfuResponseEnvelope);
+  rpc SubscribeToEvents(SfuRequestEnvelope) returns (stream SfuEvent);
+}

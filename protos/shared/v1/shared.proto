@@ -1,0 +1,533 @@
+// =============================== WARNING ===============================
+// DO NOT RENAME OR CHANGE FIELD NUMBERS ONCE PUBLISHED.
+// Field numbers are part of the Protobuf binary contract:
+// - Clients decode fields by number, not name.
+// - Changing or reusing field numbers breaks backward compatibility.
+// - If removing a field, use `reserved` to prevent accidental reuse.
+//
+// FIELD NUMBER RULES:
+// - Message field numbers must start at 1 (0 is invalid).
+// - Field numbers 1–15 use 1 byte on the wire (prefer for high-frequency fields).
+// - Field numbers > 15 are allowed and commonly used.
+// - Never reuse previously removed field numbers — use `reserved`.
+//
+// ENUM RULES:
+// - The first enum value **must** be `0` in proto3 (it's the default).
+// - Use an explicit "UNSPECIFIED = 0" if needed to catch unset states.
+//
+// OPTIONAL FIELD RULES:
+// - Use `oneof` to represent optional scalar fields (e.g., uint32, bool, enum).
+// - This gives correct `Option<T>` behavior in Rust via `prost`.
+//
+// DO NOT CHANGE `package` or `syntax` without coordination.
+//
+// Group related types by domain. Keep service definitions at the bottom.
+//
+// EXAMPLES:
+// `reserved` Example:
+//   // Original
+//   string nickname = 3;
+//
+//   // After removal — safe
+//   reserved 3;
+//   reserved "nickname";
+// =======================================================================
+
+syntax = "proto3";
+
+package saasy.shared.v1;
+
+// Common definitions
+
+message SessionId {
+  string id = 1;
+}
+
+enum MediaKind {
+  MEDIA_KIND_UNSPECIFIED = 0;
+  MEDIA_KIND_AUDIO = 1;
+  MEDIA_KIND_VIDEO = 2;
+}
+
+// RTP definitions
+
+enum RtpHeaderExtensionUri {
+  RTP_HEADER_EXTENSION_URI_UNSPECIFIED = 0;
+  RTP_HEADER_EXTENSION_URI_MID = 1;
+  RTP_HEADER_EXTENSION_URI_RTP_STREAM_ID = 2;
+  RTP_HEADER_EXTENSION_URI_REPAIR_RTP_STREAM_ID = 3;
+  RTP_HEADER_EXTENSION_URI_AUDIO_LEVEL = 4;
+  RTP_HEADER_EXTENSION_URI_VIDEO_ORIENTATION = 5;
+  RTP_HEADER_EXTENSION_URI_TIME_OFFSET = 6;
+  RTP_HEADER_EXTENSION_URI_TRANSPORT_WIDE_CC_DRAFT01 = 7;
+  RTP_HEADER_EXTENSION_URI_ABS_SEND_TIME = 8;
+  RTP_HEADER_EXTENSION_URI_ABS_CAPTURE_TIME = 9;
+  RTP_HEADER_EXTENSION_URI_PLAYOUT_DELAY = 10;
+  RTP_HEADER_EXTENSION_URI_DEPENDENCY_DESCRIPTOR = 11;
+}
+
+enum RtpHeaderExtensionDirection {
+  RTP_HEADER_EXTENSION_DIRECTION_UNSPECIFIED = 0;
+  RTP_HEADER_EXTENSION_DIRECTION_SEND_RECV = 1;
+  RTP_HEADER_EXTENSION_DIRECTION_SEND_ONLY = 2;
+  RTP_HEADER_EXTENSION_DIRECTION_RECV_ONLY = 3;
+  RTP_HEADER_EXTENSION_DIRECTION_INACTIVE = 4;
+}
+
+message RtpHeaderExtension {
+  RtpHeaderExtensionUri uri = 1;
+  uint32 preferred_id = 2;
+  bool preferred_encrypt = 3;
+  MediaKind kind = 4;
+  RtpHeaderExtensionDirection direction = 5;
+}
+
+enum MimeTypeAudio {
+  MIME_TYPE_AUDIO_UNSPECIFIED = 0;
+  MIME_TYPE_AUDIO_OPUS = 1;
+  MIME_TYPE_AUDIO_MULTI_CHANNEL_OPUS = 2;
+  MIME_TYPE_AUDIO_PCMU = 3;
+  MIME_TYPE_AUDIO_PCMA = 4;
+  MIME_TYPE_AUDIO_ISAC = 5;
+  MIME_TYPE_AUDIO_G722 = 6;
+  MIME_TYPE_AUDIO_ILBC = 7;
+  MIME_TYPE_AUDIO_SILK = 8;
+  MIME_TYPE_AUDIO_CN = 9;
+  MIME_TYPE_AUDIO_TELEPHONE_EVENT = 10;
+  MIME_TYPE_AUDIO_RTX = 11;
+  MIME_TYPE_AUDIO_RED = 12;
+}
+
+enum MimeTypeVideo {
+  MIME_TYPE_VIDEO_UNSPECIFIED = 0;
+  MIME_TYPE_VIDEO_VP8 = 1;
+  MIME_TYPE_VIDEO_VP9 = 2;
+  MIME_TYPE_VIDEO_H264 = 3;
+  MIME_TYPE_VIDEO_AV1 = 4;
+  MIME_TYPE_VIDEO_RTX = 5;
+  MIME_TYPE_VIDEO_RED = 6;
+  MIME_TYPE_VIDEO_ULPFEC = 7;
+}
+
+message RtpCodecParametersParameters {
+  string key = 1;
+  oneof value {
+    string string_value = 2;
+    uint32 number_value = 3;
+  }
+}
+
+message RtcpFeedback {
+  string type = 1;
+  string parameter = 2;
+}
+
+message AudioRtpCodecCapabilityFinalized {
+  uint32 preferred_payload_type = 1;
+  MimeTypeAudio mime_type = 2;
+  uint32 clock_rate = 3;
+  uint32 channels = 4;
+  repeated RtpCodecParametersParameters parameters = 5;
+  repeated RtcpFeedback rtcp_feedback = 6;
+}
+
+message VideoRtpCodecCapabilityFinalized {
+  uint32 preferred_payload_type = 1;
+  MimeTypeVideo mime_type = 2;
+  uint32 clock_rate = 3;
+  repeated RtpCodecParametersParameters parameters = 4;
+  repeated RtcpFeedback rtcp_feedback = 5;
+}
+
+message AudioRtpCodecCapability {
+  oneof preferred_payload_type_opt {
+    uint32 preferred_payload_type = 1;
+  }
+  MimeTypeAudio mime_type = 2;
+  uint32 clock_rate = 3;
+  uint32 channels = 4;
+  repeated RtpCodecParametersParameters parameters = 5;
+  repeated RtcpFeedback rtcp_feedback = 6;
+}
+
+message VideoRtpCodecCapability {
+  oneof preferred_payload_type_opt {
+    uint32 preferred_payload_type = 1;
+  }
+  MimeTypeVideo mime_type = 2;
+  uint32 clock_rate = 3;
+  repeated RtpCodecParametersParameters parameters = 4;
+  repeated RtcpFeedback rtcp_feedback = 5;
+}
+
+message RtpCodecCapabilityFinalized {
+  oneof capability {
+    AudioRtpCodecCapabilityFinalized audio = 1;
+    VideoRtpCodecCapabilityFinalized video = 2;
+  }
+}
+
+message RtpCodecCapability {
+  oneof capability {
+    AudioRtpCodecCapability audio = 1;
+    VideoRtpCodecCapability video = 2;
+  }
+}
+
+message RtpCapabilitiesFinalized {
+  repeated RtpCodecCapabilityFinalized codecs = 1;
+  repeated RtpHeaderExtension header_extensions = 2;
+}
+
+message RtpCapabilities {
+  repeated RtpCodecCapability codecs = 1;
+  repeated RtpHeaderExtension header_extensions = 2;
+}
+
+message AudioRtpCodecParameters {
+  uint32 payload_type = 1;
+  MimeTypeAudio mime_type = 2;
+  uint32 clock_rate = 3;
+  uint32 channels = 4;
+  repeated RtpCodecParametersParameters parameters = 5;
+  repeated RtcpFeedback rtcp_feedback = 6;
+}
+
+message VideoRtpCodecParameters {
+  uint32 payload_type = 1;
+  MimeTypeVideo mime_type = 2;
+  uint32 clock_rate = 3;
+  repeated RtpCodecParametersParameters parameters = 4;
+  repeated RtcpFeedback rtcp_feedback = 5;
+}
+
+message RtpCodecParameters {
+  oneof parameters {
+    AudioRtpCodecParameters audio = 1;
+    VideoRtpCodecParameters video = 2;
+  }
+}
+
+message RtpHeaderExtensionParameters {
+  uint32 id = 1;
+  RtpHeaderExtensionUri uri = 2;
+  bool encrypt = 3;
+}
+
+message RtpEncodingParametersRtx {
+  uint32 ssrc = 1;
+}
+
+enum ScalabilityModeEnum {
+  SCALABILITY_MODE_ENUM_UNSPECIFIED = 0;
+  SCALABILITY_MODE_ENUM_NONE = 1;
+  SCALABILITY_MODE_ENUM_L1T2 = 2;
+  SCALABILITY_MODE_ENUM_L1T2H = 3;
+  SCALABILITY_MODE_ENUM_L1T3 = 4;
+  SCALABILITY_MODE_ENUM_L1T3H = 5;
+  SCALABILITY_MODE_ENUM_L2T1 = 6;
+  SCALABILITY_MODE_ENUM_L2T1H = 7;
+  SCALABILITY_MODE_ENUM_L2T1_KEY = 8;
+  SCALABILITY_MODE_ENUM_L2T2 = 9;
+  SCALABILITY_MODE_ENUM_L2T2H = 10;
+  SCALABILITY_MODE_ENUM_L2T2_KEY = 11;
+  SCALABILITY_MODE_ENUM_L2T2_KEY_SHIFT = 12;
+  SCALABILITY_MODE_ENUM_L2T3 = 13;
+  SCALABILITY_MODE_ENUM_L2T3H = 14;
+  SCALABILITY_MODE_ENUM_L2T3_KEY = 15;
+  SCALABILITY_MODE_ENUM_L2T3_KEY_SHIFT = 16;
+  SCALABILITY_MODE_ENUM_L3T1 = 17;
+  SCALABILITY_MODE_ENUM_L3T1H = 18;
+  SCALABILITY_MODE_ENUM_L3T1_KEY = 19;
+  SCALABILITY_MODE_ENUM_L3T2 = 20;
+  SCALABILITY_MODE_ENUM_L3T2H = 21;
+  SCALABILITY_MODE_ENUM_L3T2_KEY = 22;
+  SCALABILITY_MODE_ENUM_L3T2_KEY_SHIFT = 23;
+  SCALABILITY_MODE_ENUM_L3T3 = 24;
+  SCALABILITY_MODE_ENUM_L3T3H = 25;
+  SCALABILITY_MODE_ENUM_L3T3_KEY = 26;
+  SCALABILITY_MODE_ENUM_L3T3_KEY_SHIFT = 27;
+  SCALABILITY_MODE_ENUM_S2T1 = 28;
+  SCALABILITY_MODE_ENUM_S2T1H = 29;
+  SCALABILITY_MODE_ENUM_S2T2 = 30;
+  SCALABILITY_MODE_ENUM_S2T2H = 31;
+  SCALABILITY_MODE_ENUM_S2T3 = 32;
+  SCALABILITY_MODE_ENUM_S2T3H = 33;
+  SCALABILITY_MODE_ENUM_S3T1 = 34;
+  SCALABILITY_MODE_ENUM_S3T1H = 35;
+  SCALABILITY_MODE_ENUM_S3T2 = 36;
+  SCALABILITY_MODE_ENUM_S3T2H = 37;
+  SCALABILITY_MODE_ENUM_S3T3 = 38;
+  SCALABILITY_MODE_ENUM_S3T3H = 39;
+}
+
+message ScalabilityModeCustom {
+  string scalability_mode = 1;
+  uint32 spatial_layers = 2;
+  uint32 temporal_layers = 3;
+  bool ksvc = 4;
+}
+
+message ScalabilityMode {
+  oneof mode {
+    ScalabilityModeEnum predefined = 1;
+    ScalabilityModeCustom custom = 2;
+  }
+}
+
+message RtpEncodingParameters {
+  oneof ssrc_opt {
+    uint32 ssrc = 1;
+  }
+  oneof rid_opt {
+    string rid = 2;
+  }
+  oneof codec_payload_type_opt {
+    uint32 codec_payload_type = 3;
+  }
+  oneof dtx_opt {
+    bool dtx = 4;
+  }
+  oneof max_bitrate_opt {
+    uint32 max_bitrate = 5;
+  }
+  RtpEncodingParametersRtx rtx = 6;
+  ScalabilityMode scalability_mode = 7;
+}
+
+message RtcpParameters {
+  oneof cname_opt {
+    string cname = 1;
+  }
+  bool reduced_size = 2;
+}
+
+message RtpParameters {
+  oneof mid_opt {
+    string mid = 1;
+  }
+  repeated RtpCodecParameters codecs = 2;
+  repeated RtpHeaderExtensionParameters header_extensions = 3;
+  repeated RtpEncodingParameters encodings = 4;
+  RtcpParameters rtcp = 5;
+}
+
+// Transport definitions
+
+enum DtlsRole {
+  DTLS_ROLE_UNSPECIFIED = 0;
+  DTLS_ROLE_AUTO = 1;
+  DTLS_ROLE_CLIENT = 2;
+  DTLS_ROLE_SERVER = 3;
+}
+
+enum DtlsFingerprintAlgorithm {
+  DTLS_FINGERPRINT_ALGORITHM_UNSPECIFIED = 0;
+  DTLS_FINGERPRINT_ALGORITHM_SHA1 = 1;
+  DTLS_FINGERPRINT_ALGORITHM_SHA224 = 2;
+  DTLS_FINGERPRINT_ALGORITHM_SHA256 = 3;
+  DTLS_FINGERPRINT_ALGORITHM_SHA384 = 4;
+  DTLS_FINGERPRINT_ALGORITHM_SHA512 = 5;
+}
+
+message DtlsFingerprint {
+  DtlsFingerprintAlgorithm algorithm = 1;
+  bytes value = 2;
+}
+
+message DtlsParameters {
+  DtlsRole role = 1;
+  repeated DtlsFingerprint fingerprints = 2;
+}
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_TCP = 1;
+  PROTOCOL_UDP = 2;
+}
+
+enum IceCandidateType {
+  ICE_CANDIDATE_TYPE_UNSPECIFIED = 0;
+  ICE_CANDIDATE_TYPE_HOST = 1;
+  ICE_CANDIDATE_TYPE_SRFLX = 2;
+  ICE_CANDIDATE_TYPE_PRFLX = 3;
+  ICE_CANDIDATE_TYPE_RELAY = 4;
+}
+
+enum IceCandidateTcpType {
+  ICE_CANDIDATE_TCP_TYPE_UNSPECIFIED = 0;
+  ICE_CANDIDATE_TCP_TYPE_PASSIVE = 1;
+}
+
+message IceCandidate {
+  oneof tcp_type_opt {
+    IceCandidateTcpType tcp_type = 1;
+  }
+  string foundation = 2;
+  uint32 priority = 3;
+  string address = 4;
+  Protocol protocol = 5;
+  uint32 port = 6;
+  IceCandidateType type = 7;
+}
+
+message IceParameters {
+  oneof ice_lite_opt {
+    bool ice_lite = 1;
+  }
+  string username_fragment = 2;
+  string password = 3;
+}
+
+message IceServer {
+  repeated string urls = 1;
+  oneof username_opt {
+    string username = 2;
+  }
+  oneof credential_opt {
+    string credential = 3;
+  }
+}
+
+enum TransportDirection {
+  TRANSPORT_DIRECTION_UNSPECIFIED = 0;
+  TRANSPORT_DIRECTION_SEND = 1;
+  TRANSPORT_DIRECTION_RECV = 2;
+}
+
+message TransportId {
+  string id = 1;
+}
+
+// Producer/Consumer definitions
+
+message ProducerId {
+  string id = 1;
+}
+
+message ConsumerId {
+  string id = 1;
+}
+
+message ConsumerInfo {
+  string id = 1;
+  string producer_id = 2;
+  MediaKind kind = 3;
+  RtpParameters rtp_parameters = 4;
+}
+
+// Participant definitions
+
+message ParticipantId {
+  string id = 1;
+}
+
+enum ParticipantType {
+  PARTICIPANT_TYPE_UNSPECIFIED = 0;
+  PARTICIPANT_TYPE_USER = 1;
+  PARTICIPANT_TYPE_LLM = 2;
+}
+
+// Request/Response definitions
+
+message RegisterSessionResponse {
+  SessionId session_id = 1;
+  repeated IceServer ice_servers = 2;
+}
+
+message JoinSessionRequest {
+  SessionId session_id = 1;
+  ParticipantId participant_id = 2;
+  ParticipantType participant_type = 3;
+}
+
+message JoinSessionResponse {
+  // Empty response
+}
+
+message GetRouterRtpCapabilitiesRequest {
+  SessionId session_id = 1;
+}
+
+message GetRouterRtpCapabilitiesResponse {
+  RtpCapabilitiesFinalized rtp_capabilities = 1;
+}
+
+message SetRtpCapabilitiesRequest {
+  SessionId session_id = 1;
+  RtpCapabilities rtp_capabilities = 2;
+}
+
+message SetRtpCapabilitiesResponse {
+  // Empty response
+}
+
+message CreateTransportRequest {
+  SessionId session_id = 1;
+  TransportDirection direction = 2;
+}
+
+message CreateTransportResponse {
+  TransportId transport_id = 1;
+  repeated IceCandidate ice_candidates = 2;
+  DtlsParameters dtls_parameters = 3;
+  IceParameters ice_parameters = 4;
+}
+
+message ConnectTransportRequest {
+  SessionId session_id = 1;
+  TransportId transport_id = 2;
+  DtlsParameters dtls_parameters = 3;
+}
+
+message ConnectTransportResponse {
+  // Empty response
+}
+
+message CreateProducerRequest {
+  SessionId session_id = 1;
+  TransportId transport_id = 2;
+  MediaKind kind = 3;
+  RtpParameters rtp_parameters = 4;
+}
+
+message CreateProducerResponse {
+  ProducerId producer_id = 1;
+}
+
+message CreateConsumerRequest {
+  SessionId session_id = 1;
+  TransportId transport_id = 2;
+  ProducerId producer_id = 3;
+  RtpCapabilities rtp_capabilities = 4;
+}
+
+message CreateConsumerResponse {
+  ConsumerInfo consumer_info = 1;
+}
+
+message ResumeConsumerRequest {
+  SessionId session_id = 1;
+  ConsumerId consumer_id = 2;
+}
+
+message ResumeConsumerResponse {
+  // Empty response
+}
+
+message CloseSessionRequest {
+  SessionId session_id = 1;
+}
+
+message CloseSessionResponse {
+  // Empty response
+}
+
+message ErrorResponse {
+  string code = 1;
+  string message = 2;
+}
+
+message SubscribeToEventsRequest {
+  SessionId session_id = 1;
+}
